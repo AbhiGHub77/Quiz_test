@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      margin: 0;
+      padding: 20px;
+      color: #fff;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.8em;
+      text-shadow: 0 0 15px rgba(255,255,255,0.8);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { text-shadow: 0 0 15px rgba(255,255,255,0.8); }
+      50% { text-shadow: 0 0 25px rgba(255,255,255,1); }
+    }
+
+    .question-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .question-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+    }
+
+    h3 {
+      margin-bottom: 15px;
+    }
+
+    .options button {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      border-radius: 8px;
+      padding: 10px 15px;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 1em;
+      color: #fff;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 8px rgba(255,255,255,0.2);
+    }
+
+    .options button:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+      box-shadow: 0 0 12px #fff;
+    }
+
+    .correct {
+      color: #00ffae;
+      font-weight: bold;
+      text-shadow: 0 0 8px #00ffae;
+    }
+
+    .wrong {
+      color: #ff4f81;
+      font-weight: bold;
+      text-shadow: 0 0 8px #ff4f81;
+    }
+  </style>
+</head>
+<body>
+  <h1> Quiz App</h1>
+  <div id="quiz"></div>
+
+  <script>
+    const API_BASE = "http://localhost:5000/api"; // backend URL
+
+    async function loadQuestions() {
+      const res = await fetch(`${API_BASE}/questions`);
+      const questions = await res.json();
+
+      if (questions.length === 0) {
+        document.getElementById("quiz").innerHTML = "<p>No questions found!</p>";
+        return;
+      }
+
+      const container = document.getElementById("quiz");
+      container.innerHTML = "";
+
+      questions.forEach((q, index) => {
+        const questionBlock = document.createElement("div");
+        questionBlock.classList.add("question-card");
+
+        const optionsHTML = q.options.map(opt => `
+          <button onclick="submitAnswer('${q._id}', '${opt}', 'result-${index}')">${opt}</button>
+        `).join("");
+
+        questionBlock.innerHTML = `
+          <h3>Q${index + 1}: ${q.questionText}</h3>
+          <div class="options">${optionsHTML}</div>
+          <p id="result-${index}"></p>
+        `;
+
+        container.appendChild(questionBlock);
+      });
+    }
+
+    async function submitAnswer(questionId, selectedAnswer, resultId) {
+      const res = await fetch(`${API_BASE}/attempt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user: "TestUser",
+          questionId,
+          selectedAnswer
+        })
+      });
+
+      const data = await res.json();
+      const resultEl = document.getElementById(resultId);
+      resultEl.textContent = data.correct
+        ? ` Correct! The answer is ${data.correctAnswer}`
+        : ` Wrong! The correct answer is ${data.correctAnswer}`;
+
+      resultEl.className = data.correct ? "correct" : "wrong";
+    }
+
+    loadQuestions();
+  </script>
+</body>
+</html>
